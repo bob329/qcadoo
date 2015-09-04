@@ -34,6 +34,7 @@ import com.qcadoo.model.api.search.SearchResult;
 import com.qcadoo.model.api.types.*;
 import com.qcadoo.model.api.utils.EntityUtils;
 import com.qcadoo.model.api.validators.ErrorMessage;
+import com.qcadoo.model.constants.VersionableConstants;
 import com.qcadoo.model.internal.api.*;
 import com.qcadoo.model.internal.search.SearchCriteria;
 import com.qcadoo.model.internal.search.SearchQuery;
@@ -923,6 +924,25 @@ public class DataAccessServiceImpl implements DataAccessService {
 
     protected void saveDatabaseEntity(final InternalDataDefinition dataDefinition, final Object databaseEntity) {
         hibernateService.getCurrentSession().save(databaseEntity);
+    }
+
+    @Override
+    public Entity tryUpdateVersion(final InternalDataDefinition dataDefinition, final Entity entity) {
+        Object databaseEntityFromDb = getDatabaseEntity(dataDefinition, entity.getId());
+        Entity genericEntityFromDb = entityService.convertToGenericEntity(dataDefinition, databaseEntityFromDb);
+        Long versionFromDb = genericEntityFromDb.getLongField(VersionableConstants.VERSION_FIELD_NAME);
+
+        if(entity.getLongField(VersionableConstants.VERSION_FIELD_NAME).compareTo(versionFromDb) != 0){
+            entity.addGlobalError("qcadooView.validate.global.optimisticLock");
+        }
+        databaseEntityFromDb = entityService.convertToDatabaseEntity(dataDefinition, genericEntityFromDb, databaseEntityFromDb);
+        hibernateService.getCurrentSession().save(databaseEntityFromDb);
+        hibernateService.getCurrentSession().flush();
+
+        Long newDbVersion = entityService.convertToGenericEntity(dataDefinition, databaseEntityFromDb).getLongField(VersionableConstants.VERSION_FIELD_NAME);
+        entity.setField(VersionableConstants.VERSION_FIELD_NAME, newDbVersion);
+
+        return entity;
     }
 
     private void copyMissingFields(final Entity genericEntityToSave, final Entity existingGenericEntity) {

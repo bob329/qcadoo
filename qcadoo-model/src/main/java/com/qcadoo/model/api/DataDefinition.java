@@ -251,4 +251,5 @@ public interface DataDefinition {
      */
     boolean callValidators(final Entity targetEntity);
 
+    Entity tryUpdateVersion(Entity entity);
 }
