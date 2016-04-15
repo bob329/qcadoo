@@ -29,9 +29,10 @@ public final class RoleFields {
 
     }
 
-    public static final String IDENTIFIER_FIELD = "identifier";
+    public static final String IDENTIFIER = "identifier";
 
-    public static final String DESCRIPTION_FIELD = "description";
+    public static final String DESCRIPTION = "description";
 
     public static final String GROUPS_FIELD = "groups";
+
 }

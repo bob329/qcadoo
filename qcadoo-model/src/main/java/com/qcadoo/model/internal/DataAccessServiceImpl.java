@@ -219,11 +219,11 @@ public class DataAccessServiceImpl implements DataAccessService {
     }
 
     private void logDeletionErrors(final Entity entity) {
-        logEntityErrors(entity, entity + " hasn't been deleted, bacause of onDelete hook rejection");
+        logEntityErrors(entity, entity + " hasn't been deleted, because of onDelete hook rejection");
     }
 
     private void logValidationErrors(final Entity entity) {
-        logEntityErrors(entity, entity + " hasn't been saved, bacause of validation errors");
+        logEntityErrors(entity, entity + " hasn't been saved, because of validation errors");
     }
 
     private void logEntityErrors(final Entity entity, final String msg) {
@@ -724,7 +724,7 @@ public class DataAccessServiceImpl implements DataAccessService {
         int totalNumberOfEntities = hibernateService.getTotalNumberOfEntities(criteria);
 
         if (totalNumberOfEntities == 0) {
-            LOG.info("There is no entity matching criteria " + searchCriteria);
+            LOG.debug("There is no entity matching criteria " + searchCriteria);
             return getResultSet(null, totalNumberOfEntities, Collections.emptyList());
         }
 
@@ -954,7 +954,7 @@ public class DataAccessServiceImpl implements DataAccessService {
     private void copyValidationErrors(final DataDefinition dataDefinition, final EntityMessagesHolder target,
             final EntityMessagesHolder source) {
         for (ErrorMessage error : source.getGlobalErrors()) {
-            target.addGlobalError(error.getMessage(), error.getVars());
+            target.addGlobalError(error.getMessage(), error.getAutoClose(), error.isExtraLarge(), error.getVars());
         }
         for (Map.Entry<String, ErrorMessage> error : source.getErrors().entrySet()) {
             target.addError(dataDefinition.getField(error.getKey()), error.getValue().getMessage(), error.getValue().getVars());

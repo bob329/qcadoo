@@ -88,6 +88,8 @@ public final class LookupComponentState extends FieldComponentState implements L
 
     private boolean selectedEntityActive = true;
 
+    private boolean onlyActive = false;
+
     private String selectedEntityCode;
 
     private String selectedEntityValue;
@@ -105,7 +107,7 @@ public final class LookupComponentState extends FieldComponentState implements L
     private final CriteriaModifier criteriaModifier;
 
     private final FilterValueHolder criteriaModifierParameter;
-
+    
     public LookupComponentState(final FieldDefinition scopeField, final String fieldCode, final String expression,
             final LookupComponentPattern pattern) {
         super(pattern);
@@ -114,6 +116,7 @@ public final class LookupComponentState extends FieldComponentState implements L
         this.expression = expression;
         this.criteriaModifier = pattern.getCriteriaModifier();
         this.criteriaModifierParameter = this.criteriaModifier != null ? new FilterValueHolderImpl() : null;
+        this.onlyActive = pattern.isOnlyActive();
         registerEvent("initialize", eventPerformer, "initialize");
         registerEvent("autompleteSearch", eventPerformer, "autompleteSearch");
         registerEvent("onSelectedEntityChange", eventPerformer, "onSelectedEntityChange");
@@ -196,7 +199,7 @@ public final class LookupComponentState extends FieldComponentState implements L
     @Override
     public boolean isEmpty() {
         return org.apache.commons.lang3.StringUtils.isEmpty(autocompleteCode) && !hasSelectedEntity();
-    }
+    }  
 
     private boolean hasSelectedEntity() {
         return getFieldValue() != null;
@@ -262,10 +265,10 @@ public final class LookupComponentState extends FieldComponentState implements L
             if ((belongsToFieldDefinition == null || belongsToEntityId != null)) {
                 SearchCriteriaBuilder searchCriteriaBuilder = getDataDefinition().find();
 
-                if (StringUtils.hasText(currentCode)) {
+                if(StringUtils.hasText(currentCode)){
                     searchCriteriaBuilder.add(SearchRestrictions.ilike(fieldCode, currentCode, SearchMatchMode.ANYWHERE));
                 }
-
+                
                 if (belongsToFieldDefinition != null && belongsToEntityId != null
                         && belongsToFieldDefinition.getType() instanceof BelongsToType) {
                     BelongsToType type = (BelongsToType) belongsToFieldDefinition.getType();
@@ -273,7 +276,7 @@ public final class LookupComponentState extends FieldComponentState implements L
                             .getDataDefinition().get(belongsToEntityId)));
                 }
 
-                if (getDataDefinition().isActivable()) {
+                if (getDataDefinition().isActivable() && onlyActive) {
                     if (oldSelectedEntityId == null) {
                         searchCriteriaBuilder.add(SearchRestrictions.eq("active", true));
                     } else {
@@ -288,19 +291,27 @@ public final class LookupComponentState extends FieldComponentState implements L
                     criteriaModifier.modifyCriteria(searchCriteriaBuilder, criteriaModifierParameter);
                 }
 
+                searchCriteriaBuilder.setMaxResults(25);
+                
                 SearchResult results = searchCriteriaBuilder.list();
 
                 autocompleteEntitiesNumber = results.getTotalNumberOfEntities();
 
                 if (results.getTotalNumberOfEntities() > 25) {
-                    autocompleteMatches = new LinkedList<Entity>();
+                    autocompleteMatches = new LinkedList<>();
+                    
                 } else {
                     autocompleteMatches = results.getEntities();
                 }
+                
             } else {
-                autocompleteMatches = new LinkedList<Entity>();
+                autocompleteMatches = new LinkedList<>();
             }
 
+            if(!StringUtils.hasText(currentCode)){
+                setFieldValue("");
+            }            
+            
             autocompleteCode = currentCode;
             requestRender();
         }
@@ -350,5 +361,4 @@ public final class LookupComponentState extends FieldComponentState implements L
         criteriaModifierParameter.initialize(value.toJSON());
         requestRender();
     }
-
 }
